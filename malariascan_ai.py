@@ -57,9 +57,37 @@ train_stream = train_stream.map(lambda path, label: (
  label), num_parallel_calls=AUTO)
 train_stream = train_stream.cache()
 
-random_flip_left_right random_flip_up_down rot90 (0, 90, 180 or 270 degrees)
+random_flip_left_right random_flip_up_docell_in = keras.Input(shape=(CELL_SIZE, CELL_SIZE, 3), name="blood_cell") x = cell_in for filters in (16, 32, 64, 128):    x = layers.Conv2D(filters, 3, padding="same", use_bias=False)(x)    x = layers.BatchNormalization()(x)    x = layers.Activation("relu")(x)    x = layers.MaxPooling2D(2)(x)wn rot90 (0, 90, 180 or 270 degrees)
 random_brightness(0.08) random_saturation(0.85 - 1.15) clip_by_value(0, 1)
 
 train_stream = train_stream.batch(BATCH).prefetch(AUTO)
 val_stream = ... read -> resize -> /255 -> cache -> batch -> prefetch
 test_stream = ... read -> resize -> /255 -> cache -> batch -> prefetch
+
+network = None
+if os.path.exists(model_file): 
+ answer = input("A trained network was found. Reuse it? (y/n):   ").strip().lower() 
+ if answer == "y":      
+  network = keras.models.load_model(model_file)
+
+cell_in = keras.Input(shape=(CELL_SIZE, CELL_SIZE, 3), name="blood_cell") 
+x = cell_in
+for filters in (16, 32, 64, 128): 
+ x = layers.Conv2D(filters, 3, padding="same", use_bias=False)(x) 
+ x = layers.BatchNormalization()(x) 
+ x = layers.Activation("relu")(x)  
+ x = layers.MaxPooling2D(2)(x)
+
+x = layers.GlobalAveragePooling2D()(x) 
+x = layers.Dense(64, activation="relu")(x) 
+x = layers.Dropout(0.3)(x)
+verdict = layers.Dense(1, activation="sigmoid", name="parasite_probability")(x)
+network = keras.Model(cell_in, verdict, name="malariascan_cnn")
+
+network.compile( 
+ optimizer=keras.optimizers.Adam(learning_rate=LEARNING_RATE), 
+ loss="binary_crossentropy",  
+ metrics=[accuracy, auc, precision, recall])
+
+network.fit(train_stream, validation_data=val_stream, epochs=EPOCHS,   
+            callbacks=training_helpers, verbose=1)
