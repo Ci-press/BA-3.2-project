@@ -91,3 +91,21 @@ network.compile(
 
 network.fit(train_stream, validation_data=val_stream, epochs=EPOCHS,   
             callbacks=training_helpers, verbose=1)
+
+log = np.atleast_1d(np.genfromtxt(log_file, delimiter=",", names=True))
+epoch_numbers = log["epoch"] + 1
+figure, panels = plt.subplots(1, 3, figsize=(15, 4))
+for panel, score in zip(panels, ("accuracy", "loss", "auc")):
+ panel.plot(epoch_numbers, log[score], "o-", label="train")
+ panel.plot(epoch_numbers, log["val_" + score], "s--", label="validation")
+best_epoch = int(np.argmax(log["val_auc"]))
+
+scores = network.evaluate(test_stream, verbose=0, return_dict=True)
+chances = network.predict(test_stream, verbose=0).ravel()
+guesses = (chances >= DECISION_LINE).astype(int)
+
+classification_report(test_labels, guesses, ...)
+missed = int(((test_labels == 1) & (guesses == 0)).sum())
+ConfusionMatrixDisplay(confusion_matrix(test_labels, guesses), ...)
+roc_curve(test_labels, chances) roc_auc_score(test_labels, chances)
+
