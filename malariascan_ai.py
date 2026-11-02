@@ -109,3 +109,20 @@ missed = int(((test_labels == 1) & (guesses == 0)).sum())
 ConfusionMatrixDisplay(confusion_matrix(test_labels, guesses), ...)
 roc_curve(test_labels, chances) roc_auc_score(test_labels, chances)
 
+while True:
+  choice = input("[1] Random test cell   [2] My own image   [3] Exit  ->  ").strip()
+  if choice == "3":
+    break
+   
+ cell_image = tf.image.resize(tf.io.decode_image(tf.io.read_file(cell_path), channels=3,
+            expand_animations=False), (CELL_SIZE, CELL_SIZE)) / 255.0
+
+chance = float(network.predict(tf.expand_dims(cell_image, 0), verbose=0)[0][0])
+predicted_class = CELL_CLASSES[int(chance >= DECISION_LINE)]
+confidence = chance if chance >= DECISION_LINE else 1 - chance
+
+print(f"Result: {predicted_class}  |  Confidence: {confidence:.2%}  |"
+       f"  Actual: {real_class}")
+if UNSURE_LOW <= chance <= UNSURE_HIGH:
+  print("CAUTION: the model is unsure - a lab technician should confirm ...")
+ plt.imshow(cell_image.numpy()); plt.axis("off"); plt.title(...); plt.show()
